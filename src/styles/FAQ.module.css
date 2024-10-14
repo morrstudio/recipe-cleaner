@@ -1,0 +1,26 @@
+.faqItem {
+    margin-bottom: 10px;
+  }
+  
+  .faqQuestion {
+    width: 100%;
+    text-align: left;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .faqAnswer {
+    padding: 10px;
+    background-color: #ffffff;
+  }
+  
+  .arrow {
+    float: right;
+    transition: transform 0.3s ease;
+  }
+  
+  .arrow.open {
+    transform: rotate(180deg);
+  }
