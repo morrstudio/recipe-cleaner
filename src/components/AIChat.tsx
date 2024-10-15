@@ -1,52 +1,74 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { Send, Bot } from 'lucide-react'
+import React, { useState } from 'react'
+import { Send } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { chatWithAI } from '@/lib/api'
+import { Recipe } from '@/types/recipe'
 
 interface AIChatProps {
   recipeId: string;
-  onRecipeUpdate: () => void;
+  onRecipeUpdate: (updatedRecipe: Recipe) => void;
+}
+
+interface ChatMessage {
+  role: 'user' | 'ai';
+  content: string;
 }
 
 export default function AIChat({ recipeId, onRecipeUpdate }: AIChatProps) {
-  const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant', content: string }>>([])
   const [input, setInput] = useState('')
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
-    }
-  }, [messages])
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim()) return
+    if (!input.trim() || isLoading) return
 
-    const userMessage = { role: 'user' as const, content: input }
-    setMessages(prev => [...prev, userMessage])
-    setInput('')
+    setIsLoading(true)
+    const userMessage: ChatMessage = { role: 'user', content: input }
+    setChatHistory(prev => [...prev, userMessage])
 
     try {
-      const response = await chatWithAI(input, recipeId)
-      const aiMessage = { role: 'assistant' as const, content: response }
-      setMessages(prev => [...prev, aiMessage])
-      if (response.includes('updated the recipe')) {
-        onRecipeUpdate()
+      console.log('Sending request to API...')
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: input, recipeId }),
+      })
+      console.log('Response status:', response.status)
+
+      const data = await response.json()
+      console.log('Response data:', data)
+
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`)
       }
+
+      if (data.updatedRecipe) {
+        onRecipeUpdate(data.updatedRecipe);
+      }
+
+      const aiMessage: ChatMessage = { role: 'ai', content: data.message }
+      setChatHistory(prev => [...prev, aiMessage])
     } catch (error) {
-      console.error('AI chat error:', error)
-      const errorMessage = { role: 'assistant' as const, content: 'Sorry, I encountered an error. Please try again.' }
-      setMessages(prev => [...prev, errorMessage])
+      console.error('Detailed error:', error)
+      const errorMessage: ChatMessage = { 
+        role: 'ai', 
+        content: error instanceof Error ? error.message : 'Sorry, there was an error processing your request.' 
+      }
+      setChatHistory(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
+      setInput('')
     }
   }
 
   return (
-    <div className="h-96 flex flex-col">
-      <ScrollArea className="flex-grow mb-4" ref={scrollAreaRef}>
-        {messages.map((message, index) => (
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-grow mb-4">
+        {chatHistory.map((message, index) => (
           <div key={index} className={`mb-2 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
             <span className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>
               {message.content}
@@ -58,11 +80,12 @@ export default function AIChat({ recipeId, onRecipeUpdate }: AIChatProps) {
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask the AI assistant..."
+          placeholder="Ask about the recipe..."
+          disabled={isLoading}
           className="flex-grow"
         />
-        <Button type="submit">
-          <Send className="w-4 h-4" />
+        <Button type="submit" disabled={isLoading}>
+          {isLoading ? 'Sending...' : <Send className="h-4 w-4" />}
         </Button>
       </form>
     </div>

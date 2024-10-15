@@ -85,9 +85,9 @@ export default function HomePage() {
           <Button
             onClick={handleLogin}
             variant="outline"
-            className="text-[#1A2530] border-[#1A2530] hover:bg-[#1A2530] hover:text-white transition-colors duration-200 rounded-full px-6 py-2"
+            className="text-[#1A2530] border-[#1A2530] hover:bg-[#1A2530] hover:text-white transition-colors duration-200 rounded-md px-4 py-2"
           >
-            Login
+            <span className="mr-2">➜</span> Login
           </Button>
         </nav>
         
@@ -103,15 +103,15 @@ export default function HomePage() {
               placeholder="Paste your recipe URL here..."
               value={recipeUrl}
               onChange={(e) => setRecipeUrl(e.target.value)}
-              className="flex-grow text-lg rounded-full border-gray-300 focus:ring-2 focus:ring-[#1A2530] focus:border-transparent pr-32"
+              className="flex-grow text-lg rounded-md border-gray-300 focus:ring-2 focus:ring-[#1A2530] focus:border-transparent"
               disabled={isLoading}
             />
             <Button 
               type="submit" 
-              className="absolute right-0 bg-[#1A2530] hover:bg-[#2C3E50] text-white rounded-full px-6 py-2 mr-2"
+              className="ml-2 bg-[#1A2530] hover:bg-[#2C3E50] text-white rounded-md px-4 py-2"
               disabled={isLoading}
             >
-              {isLoading ? 'Loading...' : 'Clean Recipe'}
+              <span className="mr-2">✨</span> {isLoading ? 'Loading...' : 'Clean Recipe'}
             </Button>
           </div>
         </form>

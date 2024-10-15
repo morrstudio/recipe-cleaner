@@ -1,49 +1,93 @@
-import axios from 'axios';
-import * as cheerio from 'cheerio';
+import OpenAI from 'openai'
+import axios from 'axios'
 
-export async function extractRecipe(url: string): Promise<{ ingredients: string[], instructions: string[] }> {
+const openai = new OpenAI({
+  apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
+  dangerouslyAllowBrowser: true // Be cautious with this in production
+})
+
+export async function extractRecipe(url: string) {
   try {
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-    
-    const ingredients: string[] = [];
-    const instructions: string[] = [];
-
-    // Extract ingredients
-    $('.wprm-recipe-ingredient').each((_, elem) => {
-      const amount = $(elem).find('.wprm-recipe-ingredient-amount').text().trim();
-      const unit = $(elem).find('.wprm-recipe-ingredient-unit').text().trim();
-      const name = $(elem).find('.wprm-recipe-ingredient-name').text().trim();
-      const ingredient = `${amount} ${unit} ${name}`.trim();
-      if (ingredient) ingredients.push(ingredient);
-    });
-
-    // Extract instructions
-    $('.wprm-recipe-instruction-text').each((_, elem) => {
-      const instruction = $(elem).text().trim();
-      if (instruction) instructions.push(instruction);
-    });
-
-    // If we couldn't find ingredients or instructions, try a more generic approach
-    if (ingredients.length === 0 && instructions.length === 0) {
-      $('ul li').each((_, elem) => {
-        const text = $(elem).text().trim();
-        if (text.match(/^\d+|\bcup\b|\btsp\b|\btbsp\b|\boz\b|\bpound\b/i)) {
-          ingredients.push(text);
-        }
-      });
-
-      $('ol li').each((_, elem) => {
-        const text = $(elem).text().trim();
-        if (text.length > 20) {
-          instructions.push(text);
-        }
-      });
+    // First, try to use OpenAI API
+    const aiExtractedRecipe = await extractRecipeWithAI(url)
+    if (aiExtractedRecipe.ingredients.length > 0 || aiExtractedRecipe.instructions.length > 0) {
+      return aiExtractedRecipe
     }
 
-    return { ingredients, instructions };
+    // If OpenAI API fails or returns empty results, use fallback method
+    console.log('Falling back to regex-based extraction method')
+    return await extractRecipeWithRegex(url)
   } catch (error) {
-    console.error('Error scraping recipe:', error);
-    throw new Error('Failed to scrape recipe');
+    console.error('Error extracting recipe:', error)
+    return { ingredients: [], instructions: [] }
   }
+}
+
+async function extractRecipeWithAI(url: string) {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are a helpful assistant that extracts recipe information from URLs. Please provide only the ingredients and instructions in a structured JSON format with keys 'ingredients' (an array of strings) and 'instructions' (an array of strings). Be sure to include all ingredients and steps, even if they're in different sections on the page. If you can't find the information, return empty arrays."
+        },
+        {
+          role: "user",
+          content: `Extract the ingredients and instructions from this recipe URL: ${url}`
+        }
+      ],
+    })
+
+    const extractedRecipe = response.choices[0].message.content
+    
+    console.log('OpenAI response:', extractedRecipe)
+
+    if (extractedRecipe) {
+      try {
+        const parsedRecipe = JSON.parse(extractedRecipe)
+        if (Array.isArray(parsedRecipe.ingredients) && Array.isArray(parsedRecipe.instructions)) {
+          return parsedRecipe
+        }
+      } catch (parseError) {
+        console.error('Error parsing OpenAI response:', parseError)
+      }
+    }
+    
+    return { ingredients: [], instructions: [] }
+  } catch (error) {
+    console.error('Error using OpenAI API:', error)
+    return { ingredients: [], instructions: [] }
+  }
+}
+
+async function extractRecipeWithRegex(url: string) {
+  try {
+    const response = await axios.get(url)
+    const html = response.data
+
+    const ingredients = extractIngredients(html)
+    const instructions = extractInstructions(html)
+
+    return { ingredients, instructions }
+  } catch (error) {
+    console.error('Error extracting recipe with regex:', error)
+    return { ingredients: [], instructions: [] }
+  }
+}
+
+function extractIngredients(html: string): string[] {
+  const ingredientRegex = /<li[^>]*class="[^"]*ingredient[^"]*"[^>]*>(.*?)<\/li>/gi
+  const matches = html.match(ingredientRegex) || []
+  return matches.map(match => cleanHtml(match))
+}
+
+function extractInstructions(html: string): string[] {
+  const instructionRegex = /<li[^>]*class="[^"]*instruction[^"]*"[^>]*>(.*?)<\/li>/gi
+  const matches = html.match(instructionRegex) || []
+  return matches.map(match => cleanHtml(match))
+}
+
+function cleanHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, '').trim()
 }
