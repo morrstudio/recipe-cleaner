@@ -1,0 +1,10 @@
+.instructions {
+  /* Remove or modify these properties that might be causing the scroll box */
+  max-height: none;
+  overflow: visible;
+  
+  /* Ensure proper width and spacing */
+  width: 100%;
+  padding: 1rem;
+  margin: 0;
+} 

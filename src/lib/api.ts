@@ -1,5 +1,22 @@
 import { Recipe } from '../types/recipe';
 
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface RegisterData {
+  email: string;
+  password: string;
+  name: string;
+}
+
+interface UserProfileData {
+  name?: string;
+  email?: string;
+  // Add other profile fields as needed
+}
+
 export const scrapeRecipe = async (url: string): Promise<{ ingredients: string[], instructions: string[] }> => {
   try {
     const response = await fetch('/api/scrape-recipe', {
@@ -51,3 +68,23 @@ export async function chatWithAI(input: string, recipeId: string): Promise<{ mes
     throw error;
   }
 }
+
+export const login = async (credentials: LoginCredentials) => {
+  // Implementation
+};
+
+export const register = async (userData: RegisterData) => {
+  // Implementation
+};
+
+export const getUserProfile = async () => {
+  // Implementation
+};
+
+export const updateUserProfile = async (data: UserProfileData) => {
+  // Implementation
+};
+
+export const deleteRecipe = async (id: string) => {
+  // Implementation
+};

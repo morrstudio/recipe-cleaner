@@ -5,9 +5,22 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
 import { login } from '@/lib/api'
 import { toast } from 'react-toastify'
 import { useAuth } from '@/contexts/AuthContext'
+
+// Add interface for login response
+interface LoginResponse {
+  token: string;
+}
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -18,8 +31,8 @@ export default function Login() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const { token, userId } = await login(email, password)
-      authLogin(token, userId)
+      const response = await login({ email, password }) as unknown as LoginResponse
+      authLogin(response.token, password)
       router.push('/')
     } catch (error) {
       console.error('Login failed:', error)
@@ -28,43 +41,52 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#F9F5F2] to-white flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md w-96">
-        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email</label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="w-full bg-[#1A2530] hover:bg-[#2C3E50] text-white transition-colors duration-200">
-            Log in
-          </Button>
+    <div className="min-h-screen bg-gradient-to-b from-[#F9F5F2] to-white flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="text-2xl text-center">Login</CardTitle>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button type="submit" className="w-full">
+              Log in
+            </Button>
+            <p className="text-sm text-muted-foreground text-center">
+              Don't have an account?{' '}
+              <Link 
+                href="/register" 
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Register here
+              </Link>
+            </p>
+          </CardFooter>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-[#1A2530] hover:underline">
-            Register here
-          </Link>
-        </p>
-      </div>
+      </Card>
     </div>
   )
 }

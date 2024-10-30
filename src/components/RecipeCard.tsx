@@ -1,35 +1,43 @@
-import Link from 'next/link'
+// src/components/RecipeCard.tsx
 import { Clock, Users } from 'lucide-react'
-import { Card, CardContent } from "@/components/ui/card"
-import { Recipe } from '@/types'
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import type { Recipe } from '@/types/recipe'
 
 interface RecipeCardProps {
   recipe: Recipe
+  onClick?: () => void
 }
 
-export default function RecipeCard({ recipe }: RecipeCardProps) {
+export function RecipeCard({ recipe, onClick }: RecipeCardProps) {
   return (
-    <Link href={`/recipe/${recipe._id}`}>
-      <Card className="h-full hover:shadow-lg transition-shadow duration-200">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold">{recipe.title}</h3>
-        </div>
-        <CardContent>
-          <div className="flex items-center space-x-4 text-sm text-gray-600">
-            <div className="flex items-center">
-              <Clock className="w-4 h-4 mr-1" />
-              {recipe.prepTime + recipe.cookTime} min
-            </div>
-            <div className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              {recipe.servings} servings
-            </div>
+    <Card 
+      className="hover:shadow-lg transition-shadow cursor-pointer"
+      onClick={onClick}
+    >
+      <CardHeader>
+        <CardTitle>{recipe.title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center space-x-4 text-sm text-muted-foreground mb-4">
+          <div className="flex items-center">
+            <Clock className="h-4 w-4 mr-1" />
+            {recipe.totalTime} min
           </div>
-          <p className="mt-2 text-sm text-gray-500">
-            {recipe.ingredients.length} ingredients • {recipe.instructions.length} steps
-          </p>
-        </CardContent>
-      </Card>
-    </Link>
+          <div className="flex items-center">
+            <Users className="h-4 w-4 mr-1" />
+            {recipe.servings} servings
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="secondary">
+            {recipe.ingredients.length} ingredients
+          </Badge>
+          <Badge variant="secondary">
+            {recipe.instructions.length} steps
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

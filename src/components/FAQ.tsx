@@ -1,5 +1,11 @@
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+import { ChevronDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 const faqItems = [
   {
@@ -21,31 +27,19 @@ const faqItems = [
 ]
 
 export default function FAQ() {
-  const [openItem, setOpenItem] = useState<number | null>(null);
-
-  const toggleItem = (index: number) => {
-    setOpenItem(openItem === index ? null : index);
-  };
-
   return (
     <section>
-      <h2 className="text-2xl font-semibold text-[#1A2530] mb-6 text-center">Frequently Asked Questions</h2>
-      <div className="space-y-4">
+      <h2 className="text-2xl font-semibold text-[#1A2530] mb-6 text-center">
+        Frequently Asked Questions
+      </h2>
+      <Accordion type="single" collapsible>
         {faqItems.map((item, index) => (
-          <div key={index} className="border-b border-gray-200 pb-4">
-            <button
-              className="flex justify-between items-center w-full text-left font-semibold text-lg text-gray-800 focus:outline-none"
-              onClick={() => toggleItem(index)}
-            >
-              {item.question}
-              {openItem === index ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </button>
-            {openItem === index && (
-              <p className="mt-2 text-gray-600">{item.answer}</p>
-            )}
-          </div>
+          <AccordionItem key={index} value={`item-${index}`}>
+            <AccordionTrigger>{item.question}</AccordionTrigger>
+            <AccordionContent>{item.answer}</AccordionContent>
+          </AccordionItem>
         ))}
-      </div>
+      </Accordion>
     </section>
   )
 }

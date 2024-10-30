@@ -11,7 +11,38 @@ import { Label } from "@/components/ui/label"
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { getUserProfile, updateUserProfile, deleteRecipe } from '@/lib/api'
-import { User, SavedRecipe } from '@/types'
+import { User as ImportedUser, SavedRecipe } from '@/types'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Separator } from "@/components/ui/separator"
+import { ScrollArea } from "@/components/ui/scroll-area"
+
+// Add proper type for textarea event
+type TextareaChangeEvent = React.ChangeEvent<HTMLTextAreaElement>;
+
+// Add these type definitions
+interface UserProfileData {
+  _id: string;
+  name: string;
+  email: string;
+  bio: string;
+  dietaryPreferences: Record<string, boolean>;
+  cookingExperience: string;
+  favoriteIngredients: string[];
+  cuisinePreferences: string[];
+  savedRecipes: SavedRecipe[];
+}
+
+// Update the User interface to match UserProfileData
+interface User extends UserProfileData {
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null)
@@ -25,8 +56,12 @@ export default function ProfilePage() {
     try {
       const userId = localStorage.getItem('userId')
       if (!userId) throw new Error('User not logged in')
-      const data = await getUserProfile(userId)
-      setUser(data)
+      const data = await getUserProfile() as unknown as UserProfileData
+      setUser({
+        ...data,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      })
       setSavedRecipes(data.savedRecipes || [])
     } catch (error) {
       console.error('Failed to fetch user profile:', error)
@@ -38,7 +73,7 @@ export default function ProfilePage() {
     e.preventDefault()
     if (!user) return
     try {
-      await updateUserProfile(user._id, user)
+      await updateUserProfile(user)
       toast.success('Profile updated successfully!')
     } catch (error) {
       console.error('Failed to update profile:', error)
@@ -58,21 +93,32 @@ export default function ProfilePage() {
   }
 
   const handleDietaryPreferenceChange = (preference: string) => {
-    if (user) {
-      setUser(prevUser => ({
-        ...prevUser!,
+    if (!user) return
+    setUser(prevUser => {
+      if (!prevUser) return null
+      return {
+        ...prevUser,
         dietaryPreferences: {
-          ...prevUser!.dietaryPreferences,
-          [preference]: !prevUser!.dietaryPreferences[preference as keyof typeof prevUser.dietaryPreferences],
+          ...prevUser.dietaryPreferences,
+          [preference]: !prevUser.dietaryPreferences[preference as keyof typeof prevUser.dietaryPreferences],
         },
-      }))
-    }
+      }
+    })
   }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Implementation
+  };
+
+  // Add type for Select value
+  const handleSelect = (value: string) => {
+    // Implementation
+  };
 
   if (!user) return <div>Loading...</div>
 
   return (
-    <div className="bg-gradient-to-b from-[#F9F5F2] to-white min-h-screen text-gray-800 font-sans">
+    <div className="bg-gradient-to-b from-[#F9F5F2] to-white min-h-screen">
       <div className="max-w-4xl mx-auto px-4 pt-8 md:pt-16 pb-12">
         <Button
           onClick={() => window.history.back()}
@@ -87,7 +133,7 @@ export default function ProfilePage() {
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1A2530] mb-2">Your Profile</h1>
         </header>
 
-        <form onSubmit={handleUpdateProfile} className="space-y-8">
+        <form onSubmit={handleUpdateProfile} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
@@ -145,20 +191,22 @@ export default function ProfilePage() {
               <CardTitle>Cooking Preferences</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
+              <div className="space-y-2">
                 <Label htmlFor="cookingExperience">Cooking Experience</Label>
-                <select
-                  id="cookingExperience"
+                <Select
                   value={user.cookingExperience}
-                  onChange={(e) => setUser({ ...user, cookingExperience: e.target.value })}
-                  className="w-full p-2 border rounded-md"
+                  onValueChange={(value: string) => setUser({ ...user, cookingExperience: value })}
                 >
-                  <option value="">Select your experience level</option>
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="professional">Professional</option>
-                </select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your experience level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="beginner">Beginner</SelectItem>
+                    <SelectItem value="intermediate">Intermediate</SelectItem>
+                    <SelectItem value="advanced">Advanced</SelectItem>
+                    <SelectItem value="professional">Professional</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="favoriteIngredients">Favorite Ingredients</Label>
@@ -187,28 +235,33 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent>
               {savedRecipes.length > 0 ? (
-                <ul className="space-y-4">
-                  {savedRecipes.map((recipe) => (
-                    <li key={recipe.id} className="flex items-center justify-between">
-                      <a href={`/recipe/${recipe.id}`} className="text-blue-600 hover:underline">{recipe.title}</a>
-                      <Button
-                        onClick={() => handleDeleteRecipe(recipe.id)}
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:bg-red-100"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </li>
+                <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                  {savedRecipes.map((recipe, index) => (
+                    <div key={recipe.id}>
+                      <div className="flex items-center justify-between py-2">
+                        <a href={`/recipe/${recipe.id}`} className="text-blue-600 hover:underline">
+                          {recipe.title}
+                        </a>
+                        <Button
+                          onClick={() => handleDeleteRecipe(recipe.id)}
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {index < savedRecipes.length - 1 && <Separator />}
+                    </div>
                   ))}
-                </ul>
+                </ScrollArea>
               ) : (
-                <p className="text-gray-500">No saved recipes yet.</p>
+                <p className="text-muted-foreground">No saved recipes yet.</p>
               )}
             </CardContent>
           </Card>
 
-          <Button type="submit" className="w-full bg-[#1A2530] hover:bg-[#2C3E50] text-white transition-colors duration-200">
+          <Button type="submit" className="w-full">
             <Save className="mr-2 h-4 w-4" />
             Update Profile
           </Button>

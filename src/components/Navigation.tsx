@@ -22,13 +22,23 @@ export default function Navigation() {
   return (
     <nav className="flex justify-end mb-8">
       {isAuthenticated ? (
-        <Button onClick={handleProfile} variant="outline" className="text-[#1A2530] border-[#1A2530] hover:bg-[#1A2530] hover:text-white transition-colors duration-200 px-6 py-2 rounded-full">
-          <User className="mr-2 h-5 w-5" />
+        <Button 
+          onClick={handleProfile} 
+          variant="outline" 
+          size="lg"
+          className="hover:bg-primary hover:text-primary-foreground"
+        >
+          <User className="mr-2 h-4 w-4" />
           Profile
         </Button>
       ) : (
-        <Button onClick={handleLogin} variant="outline" className="text-[#1A2530] border-[#1A2530] hover:bg-[#1A2530] hover:text-white transition-colors duration-200 px-6 py-2 rounded-full">
-          <LogIn className="mr-2 h-5 w-5" />
+        <Button 
+          onClick={handleLogin} 
+          variant="outline"
+          size="lg"
+          className="hover:bg-primary hover:text-primary-foreground"
+        >
+          <LogIn className="mr-2 h-4 w-4" />
           Login
         </Button>
       )}

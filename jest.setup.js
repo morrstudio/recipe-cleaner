@@ -1,32 +1,32 @@
-import '@testing-library/jest-dom'
+// jest.setup.ts
+import '@testing-library/jest-dom';
 
-class IntersectionObserver {
-  observe = jest.fn()
-  unobserve = jest.fn()
-  disconnect = jest.fn()
-}
+// Mock IntersectionObserver
+window.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: () => null,
+  unobserve: () => null,
+  disconnect: () => null,
+}));
 
-Object.defineProperty(window, 'IntersectionObserver', {
-  writable: true,
-  configurable: true,
-  value: IntersectionObserver,
-})
-
+// Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
-})
+});
 
-window.scrollTo = jest.fn()
+// Global fetch mock
+global.fetch = jest.fn();
 
-console.error = jest.fn()
-console.warn = jest.fn()
+// Mock crypto for tests
+Object.defineProperty(global, 'crypto', {
+  value: {
+    randomUUID: () => Math.random().toString(36).substring(7),
+  },
+});

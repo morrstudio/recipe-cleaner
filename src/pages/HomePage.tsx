@@ -1,141 +1,170 @@
-'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/router'
-import { Eraser, Utensils, Bot } from 'lucide-react'
-import { Card, CardContent } from "@/components/ui/card"
+import { Sparkles, Bot, ChefHat, BookOpen } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { toast, ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  PageHeader,
+  PageHeaderHeading,
+  PageHeaderDescription,
+} from "@/components/ui/page-header"
+import { Container } from "@/components/ui/container"
+import { Badge } from "@/components/ui/badge"
+import { extractRecipe } from '@/lib/recipeExtractor'
+import { toast } from 'react-toastify'
 
-import { scrapeRecipe } from '@/lib/api'
-import { useAuth } from '@/contexts/AuthContext'
-import FAQ from '@/components/FAQ'
-
-interface AITool {
-  id: number;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-}
+const features = [
+  {
+    icon: <ChefHat className="h-6 w-6" />,
+    title: "Clear Instructions",
+    description: "Transform cluttered recipes into step-by-step instructions"
+  },
+  {
+    icon: <Bot className="h-6 w-6" />,
+    title: "AI Assistant",
+    description: "Get help modifying recipes for dietary needs and preferences"
+  },
+  {
+    icon: <BookOpen className="h-6 w-6" />,
+    title: "Smart Conversion",
+    description: "Automatically adjust servings and convert measurements"
+  }
+]
 
 export default function HomePage() {
-  const { isAuthenticated, login } = useAuth()
+  const [url, setUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [recipeUrl, setRecipeUrl] = useState('')
   const router = useRouter()
 
-  const aiTools: AITool[] = [
-    { 
-      id: 1, 
-      title: "Recipe Cleaner", 
-      description: "Simplify and optimize recipes for easy reading and cooking.",
-      icon: <Eraser className="h-8 w-8 text-blue-500" />
-    },
-    { 
-      id: 2, 
-      title: "Ingredient Adjuster", 
-      description: "Automatically adjust ingredient quantities for different serving sizes.",
-      icon: <Utensils className="h-8 w-8 text-green-500" />
-    },
-    { 
-      id: 3, 
-      title: "AI Sous Chef", 
-      description: "Get personalized cooking tips and recipe modifications.",
-      icon: <Bot className="h-8 w-8 text-purple-500" />
-    },
-  ]
-
-  const handleSubmitRecipe = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!recipeUrl.trim()) {
-      toast.error('Please enter a valid recipe URL')
+    
+    // Basic URL validation
+    if (!url.trim()) {
+      toast.error('Please enter a recipe URL')
       return
     }
-    setIsLoading(true)
+
     try {
-      const scrapedRecipe = await scrapeRecipe(recipeUrl)
-      console.log('Scraped recipe:', scrapedRecipe)
+      new URL(url)
+    } catch {
+      toast.error('Please enter a valid URL')
+      return
+    }
+
+    setIsLoading(true)
+    
+    try {
+      // Show loading toast
+      const loadingToast = toast.loading('Extracting recipe...')
       
-      // Store the scraped recipe in localStorage
-      localStorage.setItem('scrapedRecipe', JSON.stringify(scrapedRecipe))
+      const recipe = await extractRecipe(url)
       
-      // Navigate to the modern recipe page
-      router.push('/modern-recipe')
+      // Store the recipe in localStorage
+      localStorage.setItem('scrapedRecipe', JSON.stringify(recipe))
+      
+      // Update loading toast to success
+      toast.update(loadingToast, {
+        render: 'Recipe extracted successfully!',
+        type: 'success',
+        isLoading: false,
+        autoClose: 2000
+      })
+      
+      // Navigate to recipe page
+      router.push('/recipe/view')
     } catch (error) {
-      console.error('Error scraping recipe:', error)
-      toast.error('An error occurred while scraping the recipe.')
+      console.error('Failed to extract recipe:', error)
+      toast.error('Failed to extract recipe. Please try another URL.')
     } finally {
       setIsLoading(false)
-      setRecipeUrl('')
     }
-  }
-
-  const handleLogin = () => {
-    console.log('Login button clicked')
-    // For now, we'll use placeholder values. In a real app, you'd get these from a login form.
-    login('user@example.com', 'password')
   }
 
   return (
-    <div className="bg-white min-h-screen text-gray-800 font-sans">
-      <div className="max-w-4xl mx-auto px-4 pt-8 pb-12">
-        <nav className="flex justify-end mb-8">
-          <Button
-            onClick={handleLogin}
-            variant="outline"
-            className="text-[#1A2530] border-[#1A2530] hover:bg-[#1A2530] hover:text-white transition-colors duration-200 rounded-md px-4 py-2"
-          >
-            <span className="mr-2">➜</span> Login
-          </Button>
-        </nav>
-        
-        <header className="mb-12 text-center">
-          <h1 className="text-5xl font-bold text-[#1A2530] mb-2">RecipeCleaner</h1>
-          <p className="text-xl text-gray-600">Simplify Your Cooking Experience</p>
-        </header>
+    <div className="min-h-screen bg-background">
+      <Container>
+        <div className="py-20 text-center space-y-12">
+          {/* Hero Section */}
+          <PageHeader>
+            <PageHeaderHeading className="text-4xl md:text-6xl">
+              Clean Recipes, Better Cooking
+            </PageHeaderHeading>
+            <PageHeaderDescription className="text-xl text-muted-foreground max-w-[700px] mx-auto mt-4">
+              Transform any recipe into a clear, easy-to-follow format with smart features and AI assistance.
+            </PageHeaderDescription>
+          </PageHeader>
 
-        <form onSubmit={handleSubmitRecipe} className="mb-16">
-          <div className="flex items-center max-w-3xl mx-auto">
-            <Input
-              type="url"
-              placeholder="Paste your recipe URL here..."
-              value={recipeUrl}
-              onChange={(e) => setRecipeUrl(e.target.value)}
-              className="flex-grow text-lg rounded-md border-gray-300 focus:ring-2 focus:ring-[#1A2530] focus:border-transparent"
-              disabled={isLoading}
-            />
-            <Button 
-              type="submit" 
-              className="ml-2 bg-[#1A2530] hover:bg-[#2C3E50] text-white rounded-md px-4 py-2"
-              disabled={isLoading}
-            >
-              <span className="mr-2">✨</span> {isLoading ? 'Loading...' : 'Clean Recipe'}
-            </Button>
-          </div>
-        </form>
-
-        <section className="mb-16">
-          <h2 className="text-2xl font-semibold text-[#1A2530] mb-8 text-center">Our AI Tools</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {aiTools.map((tool) => (
-              <Card key={tool.id} className="bg-white shadow-md hover:shadow-lg transition-shadow duration-200">
-                <CardContent className="p-6 flex flex-col items-center text-center">
-                  <div className="mb-4 p-3 bg-gray-100 rounded-full">
-                    {tool.icon}
+          {/* URL Input Form */}
+          <form onSubmit={handleSubmit} className="max-w-2xl mx-auto">
+            <div className="flex gap-2">
+              <Input
+                type="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="Paste any recipe URL..."
+                disabled={isLoading}
+                className="h-12 text-lg"
+              />
+              <Button 
+                type="submit" 
+                size="lg"
+                disabled={isLoading}
+                className="min-w-[140px]"
+              >
+                {isLoading ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="h-4 w-4 border-2 border-current border-t-transparent animate-spin rounded-full" />
+                    <span>Loading</span>
                   </div>
-                  <h3 className="font-semibold text-lg mb-2">{tool.title}</h3>
-                  <p className="text-sm text-gray-600">{tool.description}</p>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-5 w-5" />
+                    Clean Recipe
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mt-16">
+            {features.map((feature, index) => (
+              <Card key={index} className="relative overflow-hidden border-2">
+                <CardContent className="pt-6 pb-8 px-6">
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 mx-auto">
+                    {feature.icon}
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </CardContent>
               </Card>
             ))}
           </div>
-        </section>
 
-        <FAQ />
-      </div>
-      <ToastContainer position="bottom-right" />
+          {/* Example URLs */}
+          <div className="text-center space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground">Try it with these example recipes:</h3>
+            <div className="flex flex-wrap justify-center gap-2">
+              {[
+                'allrecipes.com/recipe/10813/best-chocolate-chip-cookies',
+                'foodnetwork.com/recipes/alton-brown/guacamole-recipe-1940609',
+                'bonappetit.com/recipe/classic-potato-salad'
+              ].map((example, index) => (
+                <Badge 
+                  key={index}
+                  variant="secondary"
+                  className="cursor-pointer"
+                  onClick={() => setUrl(`https://www.${example}`)}
+                >
+                  {example.split('/')[0]}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Container>
     </div>
   )
 }
